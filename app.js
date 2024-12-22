@@ -1,21 +1,24 @@
-const express=require("express") //For the Express run the application
-const userRouter=require('./routes/user.routes') //For the User Routes
-const dotEnv=require('dotenv') //For Env File
-const dbConnect=require('./config/db') //For the connection DB
-dotEnv.config()//this will help to use all field in env file in our project
+const express = require("express"); // For Express
+const userRouter = require("./routes/user.routes"); // For User Routes
+const dotenv = require("dotenv"); // For Env File
+const dbConnect = require("./config/db");  // For DB Connection
 
-dbConnect();
-const app=express()
+dotenv.config(); // Load environment variables
+dbConnect(); // Connect to MongoDB
 
-app.set('view engine','ejs')
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+const app = express();
 
+// Set view engine
+app.set("view engine", "ejs");
 
+// Middleware for parsing JSON and form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-//Trying  phele yeh URL /user/test
-app.use('/user',userRouter)
+// Use the user router
+app.use("/user", userRouter);
 
-app.listen(4000,()=>{
-    console.log("Server is Ready")
-})
+// Start the server
+app.listen(4000, () => {
+  console.log("Server is running on http://localhost:4000");
+});

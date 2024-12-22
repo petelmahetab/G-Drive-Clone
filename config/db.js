@@ -1,9 +1,15 @@
-const mongoose=require('mongoose')
+const mongoose = require("mongoose");
 
-function  connectDb(){
-    mongoose.connect(process.env.MONGO_URL).then(()=>{
-        console.log("Mongo is Ready.")
+const dbConnect = () => {
+  const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/mydatabase";
+
+  mongoose
+    .connect(MONGO_URL)
+    .then(() => {
+      console.log("Connected to MongoDB successfully");
     })
-}
+ 
+};
 
-module.exports=connectDb
+module.exports = dbConnect; // Ensure this line exports the function
+// { useNewUrlParser: true, useUnifiedTopology: true }
