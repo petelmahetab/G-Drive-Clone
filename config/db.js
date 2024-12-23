@@ -11,5 +11,4 @@ const dbConnect = () => {
  
 };
 
-module.exports = dbConnect; // Ensure this line exports the function
-// { useNewUrlParser: true, useUnifiedTopology: true }
+module.exports = dbConnect;

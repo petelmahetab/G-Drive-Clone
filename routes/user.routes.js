@@ -30,85 +30,71 @@ router.post(
       const { username,  email, password } = req.body;
 //For Decrypt the Password we need to use bcrypt package, 10 ->round for security and performance.
 const cryptedPassword=await bCrypt.hash(password,10);
-
-      const newUser = await userModel.create({ username,  email, password:cryptedPassword });
+// :cryptedPassword
+      const newUser = await userModel.create({ username,  email, password });
       res.json(newUser);
     
   }
 );
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Login page
 router.get('/login', (req, res) => {
   res.render("login");
 });
-
 router.post('/login', [
-  body("username").trim().isEmail().withMessage("Invalid email").isLength({ min: 10 }),
+  body("username").trim().notEmpty().withMessage("Username or email is required"),
   body("password").trim().isLength({ min: 5 }).withMessage("Password must be at least 5 characters long"),
 ], async (req, res) => {
-
   const error = validationResult(req);
 
-  // If email and pass not valid
-  if (!error.isEmpty()) {  // Fixed here: added parentheses after isEmpty
+  if (!error.isEmpty()) {
+    console.log("Validation Error:", error.array());
     return res.status(400).json({
-      error: error.array()
+      error: error.array(),
     });
   }
 
-  // Extract data input
   const { username, password } = req.body;
-  const encrypPass = await bCrypt.hash(password, 10);
+  console.log("Login Request:", { username, password });
 
-  // First, we check if the username is present or not in DB using findOne() method.
-  const user = await userModel.findOne({
-    username: username,
-  });
+  try {
+    const user = await userModel.findOne({
+      $or: [{ username }, { email: username }],
+    });
 
-  if (!user) {
-    return res.status(400).json({
-      message: 'Username or Password is Incorrect'
+    console.log("User Found:", user);
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'Username or Password is Incorrect',
+      });
+    }
+
+    const isValidPass = await bCrypt.compare(password, user.password);
+    console.log("Password Match:", isValidPass);
+
+    if (!isValidPass) {
+      return res.status(400).json({
+        message: 'Username or Password is Incorrect',
+      });
+    }
+
+    const token = JWT.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    console.log("Token Generated:", token);
+
+    return res.json({ token });
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).json({
+      message: "Internal Server Error",
     });
   }
-
-  // Check the bcrypt password using compare Method 2 parameters: req.body and hashpassword and compare them.
-  const isValidPass = await bCrypt.compare(password, user.password);
-  if (!isValidPass) {
-    return res.status(400).json({
-      message: 'Username or Password is Incorrect'
-    });
-  }
-
-  // If password matches, then we generate the TOKEN using jsonwebtoken
-  const token = JWT.sign({
-    userId: user._id,
-  }, process.env.JWT_SECRET, { expiresIn: '1h' }); // You can add expiration time for the token
-
-  res.json({
-    token
-  });
 });
 
 module.exports = router;
