@@ -31,7 +31,7 @@ router.post(
 //For Decrypt the Password we need to use bcrypt package, 10 ->round for security and performance.
 const cryptedPassword=await bCrypt.hash(password,10);
 // :cryptedPassword
-      const newUser = await userModel.create({ username,  email, password });
+      const newUser = await userModel.create({ username,  email, password:cryptedPassword });
       res.json(newUser);
     
   }
@@ -63,8 +63,7 @@ router.post('/login', [
       $or: [{ username }, { email: username }],
     });
 
-    console.log("User Found:", user);
-
+    
     if (!user) {
       return res.status(400).json({
         message: 'Username or Password is Incorrect',
@@ -79,16 +78,19 @@ router.post('/login', [
         message: 'Username or Password is Incorrect',
       });
     }
-
+//3 Parameter and this token send to Front END
     const token = JWT.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { userId: user._id,
+        username:user.username
+       },
+       process.env.JWT_SECRET,
+      
     );
 
-    console.log("Token Generated:", token);
+res.cookie('token',token);
+     res.send('Logged in');
 
-    return res.json({ token });
+
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({
