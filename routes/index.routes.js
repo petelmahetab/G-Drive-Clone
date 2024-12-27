@@ -1,48 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { ID } = require('node-appwrite');
-const { uploadFile } = require('../config/appwrite');
-
+const fileModel = require('../models/file-module'); // Ensure correct path
+const middlewareLogin=require('../middlewares/auth') // Ensure correct import
 const upload = multer();
 
 
-router.get('/home',(req,res)=>{
-    res.render('home')
-})
-
-
-router.post('/upload', upload.single('file'), async (req, res) => {
+// // Home route with authentication middleware
+router.get('/home', middlewareLogin, (req, res) => {
+    res.render('home');
+});
+router.post('/upload', middlewareLogin, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).send('No file uploaded');
+            return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const bucketId = '676c545e00125217215b';
-        const fileId = ID.unique();
-        
-        const fileData = new File(
-            [req.file.buffer],
-            req.file.originalname,
-            { type: req.file.mimetype }
-        );
-
-        const result = await uploadFile(bucketId, fileId, fileData);
-
-        res.json({
-            fileId: result.$id,
-            fileName: req.file.originalname,
-            fileSize: req.file.size,
-            mimeType: req.file.mimetype
+        const newFile = new fileModel({
+            path: req.file.path,
+            originalname: req.file.originalname,
+            user: req.user.userId,
         });
 
+        // Save the new file
+        await newFile.save();
+
+        res.status(201).json({ message: 'File uploaded successfully', file: newFile });
     } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({
-            error: 'Error uploading file',
-            details: error.message
-        });
+        console.log('Error:', error); // Log the error for better debugging
+        res.status(500).json({ message: 'Error uploading file', error: error.message });
     }
 });
+
 
 module.exports = router;
